@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>GPX Tracks with Date Information</title>
+    <title>1000m in 2025 GPX Tracks (OpenStreetMap)</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -14,7 +14,7 @@
         }
         #track-table, #summary-table {
             margin-top: 20px;
-            width: 100%;
+            width: 60%; /* Adjust the width as needed */
             border-collapse: collapse;
         }
         #track-table th, #track-table td, #summary-table th, #summary-table td {
@@ -72,9 +72,9 @@
     <script src="https://unpkg.com/leaflet-gpx/gpx.js"></script>
     <script>
         // Initialize the map and set its view
-        var map = L.map('map').setView([51.505, -0.09], 13);
+        var map = L.map('map').setView([53.615, -1.910], 13);
 
-        // Add a tile layer to the map (OpenStreetMap)
+        // Add an OpenStreetMap tile layer to the map
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
@@ -87,6 +87,9 @@
         var totalTracks = 0;
         var totalDistance = 0;
         var totalElevation = 0;
+
+        // Array to store track data
+        var tracksData = [];
 
         // Function to format date
         function formatDate(date) {
@@ -110,19 +113,16 @@
                 // Extract distance, elevation gain, and date
                 var distanceMiles = e.target.get_distance() * KM_TO_MILES / 1000; // Convert to miles
                 var elevationGainFeet = e.target.get_elevation_gain() * METERS_TO_FEET; // Convert to feet
-                var trackDate = e.target.get_start_time() ? formatDate(e.target.get_start_time()) : 'N/A';
+                var trackDate = e.target.get_start_time() ? new Date(e.target.get_start_time()) : null;
 
-                // Add row to the table
-                var tableBody = document.getElementById('track-table-body');
-                var row = tableBody.insertRow();
-                row.insertCell(0).textContent = trackNumber;
-                row.insertCell(1).textContent = trackDate;
-                row.insertCell(2).textContent = distanceMiles.toFixed(2);
-                row.insertCell(3).textContent = elevationGainFeet.toFixed(0);
-
-                // Add popup to the track
-                var popupContent = `<b>Track ${trackNumber}</b><br>Date: ${trackDate}<br>Distance: ${distanceMiles.toFixed(2)} miles<br>Elevation Gain: ${elevationGainFeet.toFixed(0)} feet`;
-                e.target.bindPopup(popupContent).openPopup();
+                // Store track data
+                tracksData.push({
+                    trackNumber: trackNumber,
+                    date: trackDate,
+                    distance: distanceMiles,
+                    elevationGain: elevationGainFeet,
+                    layer: e.target
+                });
 
                 // Update summary counters
                 totalTracks++;
@@ -133,18 +133,45 @@
                 document.getElementById('total-tracks').textContent = totalTracks;
                 document.getElementById('total-distance').textContent = totalDistance.toFixed(2);
                 document.getElementById('total-elevation').textContent = totalElevation.toFixed(0);
+
+                // Sort and update table when all tracks are loaded
+                if (tracksData.length === gpxFiles.length) {
+                    updateTrackTable();
+                }
             }).addTo(map);
         }
 
-        // Add multiple GPX tracks (up to 100)
+        // Function to update the track table with sorted data
+        function updateTrackTable() {
+            // Sort tracks by date
+            tracksData.sort((a, b) => a.date - b.date);
 
+            // Populate the table
+            var tableBody = document.getElementById('track-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+            tracksData.forEach((track, index) => {
+                var row = tableBody.insertRow();
+                row.insertCell(0).textContent = track.trackNumber;
+                row.insertCell(1).textContent = track.date ? formatDate(track.date) : 'N/A';
+                row.insertCell(2).textContent = track.distance.toFixed(2);
+                row.insertCell(3).textContent = track.elevationGain.toFixed(0);
+
+                // Add popup to the track
+                var popupContent = `<b>Track ${track.trackNumber}</b><br>Date: ${track.date ? formatDate(track.date) : 'N/A'}<br>Distance: ${track.distance.toFixed(2)} miles<br>Elevation Gain: ${track.elevationGain.toFixed(0)} feet`;
+                track.layer.bindPopup(popupContent).openPopup();
+            });
+        }
+
+        // Add multiple GPX tracks (up to 100)
         var gpxFiles = [
-'https://raw.githubusercontent.com/phillongworth/phillongworth.github.io/refs/heads/main/data/1001.gpx',
-        'https://raw.githubusercontent.com/phillongworth/phillongworth.github.io/refs/heads/main/data/1002.gpx',
-        'https://raw.githubusercontent.com/phillongworth/phillongworth.github.io/refs/heads/main/data/1003.gpx',
-        'https://raw.githubusercontent.com/phillongworth/phillongworth.github.io/refs/heads/main/data/1004.gpx',
-        'https://raw.githubusercontent.com/phillongworth/phillongworth.github.io/refs/heads/main/data/1005.gpx',
-        'https://raw.githubusercontent.com/phillongworth/phillongworth.github.io/refs/heads/main/data/1006.gpx',
+            
+
+        'https://raw.githubusercontent.com/phillongworth/cyclinglog/refs/heads/main/data/1001.gpx', 
+        'https://raw.githubusercontent.com/phillongworth/cyclinglog/refs/heads/main/data/1002.gpx', 
+        'https://raw.githubusercontent.com/phillongworth/cyclinglog/refs/heads/main/data/1003.gpx', 
+        'https://raw.githubusercontent.com/phillongworth/cyclinglog/refs/heads/main/data/1004.gpx', 
+        'https://raw.githubusercontent.com/phillongworth/cyclinglog/refs/heads/main/data/1005.gpx', 
+        'https://raw.githubusercontent.com/phillongworth/cyclinglog/refs/heads/main/data/1006.gpx', 
         'https://raw.githubusercontent.com/phillongworth/cyclinglog/refs/heads/main/data/1007.gpx',  
         
             // Add up to 100 GPX file paths here
@@ -162,4 +189,3 @@
     </script>
 </body>
 </html>
-
